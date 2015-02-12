@@ -126,7 +126,10 @@ find_git_stash_status() {
   local current_branch=$(git symbolic-ref --short HEAD 2> /dev/null)
   # CONSIDER: Alternatively we could have just grepped `git stast list` for either the commit_id or the branch_name.  This would also indicate older matching stashes.
   if [[ "$stashed_commit" = "$current_commit" ]] || [[ "$stashed_branch" = "$current_branch" ]]
-  then git_stash_mark='(s)'
+  #then git_stash_mark='(s)'
+  #then git_stash_mark='藏'   # stash (Cáng)
+  #then git_stash_mark='堆'   # stack (Duī)
+  then git_stash_mark='≅'     # visual stack symbols: ≡ ≣ ⫹ ≐ ≙ ≜ ≘ ≛ ≚ ≗ ≅ ≦ ≤
   fi
 }
 
