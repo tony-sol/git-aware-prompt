@@ -5,9 +5,10 @@ find_git_branch() {
     if [[ "$branch" == "HEAD" ]]; then
       #branch='<detached>'
       # Or show the short hash
-      branch='#'$(git rev-parse --short HEAD 2> /dev/null)
+      git_branch=" [#`curseyellow`$(git rev-parse --short HEAD 2> /dev/null)`cursenorm`]"
+    else
+      git_branch=" [`cursegreen`$branch`cursenorm`]"
     fi
-    git_branch=" [$branch]"
   else
     git_branch=""
   fi
