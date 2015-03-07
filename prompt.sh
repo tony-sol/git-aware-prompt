@@ -9,6 +9,8 @@ find_git_branch() {
     else
       git_branch=" [`cursegreen`$branch`cursenorm`]"
     fi
+    # BUG: We must not set colors here, because they will mess up the prompts character allocation, causing lines to wrap at the wrong column.
+    #      As far as I can tell, colors must appear in the original prompts, wrapped in %{...} or \[...\] to indicate that they do not swallow any columns.
   else
     git_branch=""
   fi
