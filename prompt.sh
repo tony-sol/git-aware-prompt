@@ -33,27 +33,29 @@ find_git_dirty() {
 
   local gs_done_file=/tmp/done_gs.$USER.$$
   local gs_porc_file=/tmp/gs_porc.$USER.$$
-  # We need to start a subshell here, otherwise the `wait` below will be applied to jobs which the user has backgrounded (observed in zsh).  We only want it to apply to the two parallel jobs we start here.
   (
     # This is needed to stop zsh from spamming four job info messages!
     [[ -n "$ZSH_NAME" ]] && unsetopt MONITOR
+    # Start running the git status process in the background
     ( git status --porcelain 2> /dev/null > "$gs_porc_file" ; touch "$gs_done_file" ) &
-    local gs_shell_pid="$!"
-    (
-      # Keep checking if the `git status` has completed; and if it has, abort.
-      # This number defines the length of the timeout (in tenths of a second).
-      for X in `seq 1 10`; do
-        sleep 0.1
-        [[ -f "$gs_done_file" ]] && exit
-      done
-      # If the timeout is reached, kill the `git status`.
-      # Killing the parent (...)& shell is not enough; we also need to kill the child `git status` process running inside it.
-      # We must do this before killing the parent, because killing the parent first would leave the orphaned process with PPID 1.
-      pkill -P "$gs_shell_pid"
-      kill "$gs_shell_pid"
-      # We may want to add 2>/dev/null to the two lines above, in case the process completes *just* before we issue the kill signal.
-    ) &
-    wait
+  )
+  local gs_shell_pid="$!"
+  (
+    # This is needed to stop zsh from spamming four job info messages!
+    [[ -n "$ZSH_NAME" ]] && unsetopt MONITOR
+
+    # Wait for that process to complete, or give up waiting if the timeout is reached.
+    # This number defines the length of the timeout (in tenths of a second).
+    for X in `seq 1 5`; do
+      sleep 0.1
+      [[ -f "$gs_done_file" ]] && exit
+    done
+    # If the timeout is reached, kill the `git status`.
+    # Killing the parent (...)& shell is not enough; we also need to kill the child `git status` process running inside it.
+    # We must do this before killing the parent, because killing the parent first would leave the orphaned process with PPID 1.
+    #pkill -P "$gs_shell_pid"
+    #kill "$gs_shell_pid"
+    # We may want to add 2>/dev/null to the two lines above, in case the process completes *just* before we issue the kill signal.
   )
   if [[ ! -f "$gs_done_file" ]]; then
     git_dirty='#'
