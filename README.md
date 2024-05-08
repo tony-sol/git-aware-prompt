@@ -1,4 +1,4 @@
-# Git Aware Prompt (joeytwiddle's fork)
+# Git Aware Prompt (tony-sol's fork)
 
 Working with Git and its great branching/merging features is
 amazing. Constantly switching branches can be confusing though as you have to
@@ -21,24 +21,17 @@ If you `cd` to a Git working directory, you will see the current Git branch
 name displayed in your terminal prompt. When you're not in a Git working
 directory, your prompt works like normal.
 
-.
 
-**This fork by joeytwiddle also:**
-- shows you how far your local branch is **ahead** or **behind** the repository's branch
-- shows how many files are **staged**
-- indicates when you have an un-popped **stash** (when the top stash entry was made on the current commit or the current branch)
-- displays when you are on a **detached** commit, or paused during a merge, rebase or cherry-pick
-- adds a **timeout** for slower machines so that you will get your prompt quickly, even if `git status` is taking too long to retrieve the dirty and staged stats. (Tested in bash and zsh.)
+**This fork by tony-sol also:**
+- shows how many stashes you have on **stash** (when the top stash entry was made on the current commit or the current branch).
+- provided [colors.sh](https://github.com/tony-sol/git-aware-prompt/raw/master/colors.sh) won't be loaded for zsh due to performance issue, use `autoload -U colors && colors` and example bellow instead.
 
-.
 
-If you *only* want the ahead/behind marks (no timeout and no staged stats), you may prefer the branch [ahead_behind](https://github.com/joeytwiddle/git-aware-prompt/tree/ahead_behind) or if you are curious about the code, see [ahead_behind_simple](https://github.com/joeytwiddle/git-aware-prompt/tree/ahead_behind_simple) ([compare](https://github.com/joeytwiddle/git-aware-prompt/compare/jimeh:518685d5d42ab9f298207dd66bbc213775c5cbee...ahead_behind_simple?expand=1)).
+![Git Branch in Prompt](https://github.com/tony-sol/git-aware-prompt/raw/master/preview.png)
 
-The initial implementation of the timeout feature is on [this commit](https://github.com/joeytwiddle/git-aware-prompt/commit/29a89c1e6890689c819303ad33ef70ae4233589c).
-
-![Git Branch in Prompt](https://github.com/joeytwiddle/git-aware-prompt/raw/master/preview.png)
-
-> `≡` is a reminder that I have something on the stash.
+> `≡2` indicates that there are 2 entries on the stash, and last one related to current branch or commit.
+>
+> `≋3` indicates that there are 3 entries on the stash.
 >
 > `<3` indicates that the local branch is 3 commits behind the upstream (remote) branch, and could/should be pulled.
 >
@@ -69,7 +62,9 @@ The symbols (or "markers") can be changed by editing the `prompt.sh` file direct
 
 ## See Also
 
-- The [original git-aware-prompt](https://github.com/jimeh/git-aware-prompt) by jimeh, from which this version is forked
+- The [joeytwiddle's git-aware-prompt](https://github.com/joeytwiddle/git-aware-prompt) from which this version is forked
+
+- The [original git-aware-prompt](https://github.com/jimeh/git-aware-prompt) by jimeh
 
 - The [prompt now distributed with git](https://github.com/git/git/blob/master/contrib/completion/git-prompt.sh) offers a `GIT_PS1_SHOWUPSTREAM` option.
 
@@ -86,28 +81,37 @@ The symbols (or "markers") can be changed by editing the `prompt.sh` file direct
 
 ## Installation
 
-Clone the project to a `.bash` folder in your home directory:
+Clone the project to a shell configuration folder in your home directory, e.g.:
 
 ```bash
-mkdir ~/.bash
-cd ~/.bash
-git clone git://github.com/joeytwiddle/git-aware-prompt.git
+cd "${ZDOTDIR}/extensions/"
+git clone git://github.com/tony-sol/git-aware-prompt.git
 ```
 
-Edit your `~/.bash_profile` or `~/.profile` or `~/.bashrc` (for Ubuntu) and add the following to the top:
+Edit your shell rc file (e.g. `~/.bash_profile`, `~/.profile`, `~/.bashrc`, `~/.zshrc`, `~/.zprofile`, etc.) and add the following to the top:
 
 ```bash
-source "~/.bash/git-aware-prompt/main.sh"
+source "${ZDOTDIR}/extensions/git-aware-prompt/main.sh"
 ```
 
 
 ## Configuring
 
-Once installed, there will be new `$git_branch` and `$git_dirty` variables
-available to use in the `PS1` environment variable, along with a number of
-color helper variables which you can see a list of in [colors.sh][].
-
-[colors.sh]: https://github.com/jimeh/git-aware-prompt/blob/master/colors.sh
+Once installed, there will be several new variables
+available to use in the `PS1`(or `PROMPT`, `RPROMPT`) environment variable:
+ * `$git_ahead_count`
+ * `$git_ahead_mark`
+ * `$git_behind_count`
+ * `$git_behind_mark`
+ * `$git_branch`
+ * `$git_dirty_mark`
+ * `$git_dirty_count`
+ * `$git_staged_count`
+ * `$git_staged_mark`
+ * `$git_stash_count`
+ * `$git_stash_mark`
+ * `$git_unknown_count`
+ * `$git_unknown_mark`
 
 If you want to know more about how to customize your prompt, I recommend
 this article: [How to: Change / Setup bash custom prompt (PS1)][how-to]
@@ -121,49 +125,27 @@ Below are a few suggested prompt configurations. Simply paste the code at the
 end of the same file you pasted the installation code into earlier.
 
 
-#### Mac OS X
+#### macOS (zsh)
 
 ```bash
-export PS1="\u@\h \W\[$txtcyn\]\$git_branch\[$bldgrn\]\$git_ahead_mark\$git_ahead_count\[$txtrst\]\[$bldred\]\$git_behind_mark\$git_behind_count\[$txtrst\]\[$bldylw\]\$git_stash_mark\[$txtrst\]\[$txtylw\]\$git_dirty\$git_dirty_count\[$txtrst\]\[$txtcyn\]\$git_staged_mark\$git_staged_count\[$txtrst\]\[$txtblu\]\$git_unknown_mark\$git_unknown_count\[$txtrst\]\$ "
-```
-
-Optionally, if you want a nice pretty prompt when using `sudo -s`, also add
-this line:
-
-```bash
-export SUDO_PS1="\[$bakred\]\u@\h\[$txtrst\]\w\$ "
+export RPROMPT='%{$fg_bold[green]%}$git_ahead_mark$git_ahead_count%{$fg_bold[red]%}$git_behind_mark$git_behind_count%{$fg_bold[cyan]%}$git_stash_mark$git_stash_count%{$fg_bold[yellow]%}$git_dirty_mark$git_dirty_count%{$fg_bold[blue]%}$git_staged_mark$git_staged_count%{$fg_bold[magenta]%}$git_unknown_mark$git_unknown_count%{$reset_color%}%{$fg[cyan]%}$git_branch%{$reset_color%}'
 ```
 
 
-#### Ubuntu
-
-Standard:
+#### Ubuntu (bash)
 
 ```bash
-export PS1="\${debian_chroot:+(\$debian_chroot)}\u@\h:\w\[$txtcyn\]\$git_branch\[$bldgrn\]\$git_ahead_mark\$git_ahead_count\[$txtrst\]\[$bldred\]\$git_behind_mark\$git_behind_count\[$txtrst\]\[$bldyellow\]\$git_stash_mark\[$txtrst\]\[$txtylw\]\$git_dirty\$git_dirty_count\[$txtrst\]\[$txtcyn\]\$git_staged_mark\$git_staged_count\[$txtrst\]\[$txtblu\]\$git_unknown_mark\$git_unknown_count\[$txtrst\]\$ "
-```
-
-Colorized:
-
-```bash
-export PS1="\${debian_chroot:+(\$debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\[$txtcyn\]\$git_branch\[$bldgrn\]\$git_ahead_mark\$git_ahead_count\[$txtrst\]\[$bldred\]\$git_behind_mark\$git_behind_count\[$txtrst\]\[$bldyellow\]\$git_stash_mark\[$txtrst\]\[$txtylw\]\$git_dirty\$git_dirty_count\[$txtrst\]\[$txtcyn\]\$git_staged_mark\$git_staged_count\[$txtrst\]\[$txtblu\]\$git_unknown_mark\$git_unknown_count\[$txtrst\]\$ "
-```
-
-
-#### ZSH
-
-```zsh
-export PROMPT='%n@%m:%~%{$bldpur%}$git_branch%{$bldgrn%}$git_ahead_mark$git_ahead_count%{$bldred%}$git_behind_mark$git_behind_count%{$bldylw%}$git_stash_mark%{$txtrst$txtylw%}$git_dirty$git_dirty_count%{$txtcyn%}$git_staged_mark$git_staged_count%{$txtblu%}$git_unknown_mark$git_unknown_count%{$txtrst%}$ '
+export PS1="\${debian_chroot:+(\$debian_chroot)}\u@\h:\w\[$txtcyn\]\$git_branch\[$bldgrn\]\$git_ahead_mark\$git_ahead_count\[$txtrst\]\[$bldred\]\$git_behind_mark\$git_behind_count\[$txtrst\]\[$bldyellow\]\$git_stash_mark\$git_stash_count\[$txtrst\]\[$txtylw\]\$git_dirty_mark\$git_dirty_count\[$txtrst\]\[$txtcyn\]\$git_staged_mark\$git_staged_count\[$txtrst\]\[$txtblu\]\$git_unknown_mark\$git_unknown_count\[$txtrst\]\$ "
 ```
 
 
 ## Updating
 
 Assuming you followed the default installation instructions and cloned this
-repo to `~/.bash/git-aware-prompt`:
+repo to `"${ZDOTDIR}/extensions/git-aware-prompt"`:
 
 ```bash
-cd ~/.bash/git-aware-prompt
+cd "${ZDOTDIR}/extensions/git-aware-prompt"
 git pull
 ```
 
