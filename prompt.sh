@@ -2,6 +2,10 @@
 # - Number of conflicts
 # - Whether we are on a merge or a rebase?
 
+is_inside_git_dir() {
+  echo "$PWD" | grep "/\.git\(/\|$\)" >/dev/null
+}
+
 find_git_branch() {
   # Based on: http://stackoverflow.com/a/13003854/170413
   local branch
@@ -35,7 +39,11 @@ find_git_branch() {
       is_branch=true
       upstream=$(git rev-parse '@{upstream}' 2> /dev/null)
     fi
-    git_dir="$(git rev-parse --show-toplevel)/.git"
+    if is_inside_git_dir; then
+      git_dir="${PWD%\/\.git*}/.git"
+    else
+      git_dir="$(git rev-parse --show-toplevel)/.git"
+    fi
     if [[ -d "$git_dir/rebase-merge" ]] || [[ -d "$git_dir/rebase-apply" ]]; then
       special_state=rebase
     elif [[ -f "$git_dir/MERGE_HEAD" ]]; then
@@ -62,7 +70,7 @@ find_git_branch() {
 }
 
 find_git_dirty() {
-  git_dirty=''
+  git_dirty_mark=''
   git_dirty_count=''
   git_staged_mark=''
   git_staged_count=''
@@ -70,7 +78,7 @@ find_git_dirty() {
   git_unknown_count=''
 
   # Optimization.  Requires that find_git_branch always runs before find_git_dirty in PROMPT_COMMAND or zsh's precmd hook.
-  if [[ -z "$git_branch" ]]; then
+  if [[ -z "$git_branch" ]] || is_inside_git_dir ; then
     return
   fi
 
@@ -122,7 +130,8 @@ find_git_dirty() {
   #[ "$?" = 0 ] && touch "$gs_done_file"
 
   if [[ ! -f "$gs_done_file" ]]; then
-    git_dirty='#'
+    git_dirty_mark='#'
+    git_dirty="$git_dirty_mark" # TODO: remove, backward compatibility
     return
   fi
   'rm' -f "$gs_done_file"
@@ -141,12 +150,11 @@ find_git_dirty() {
   # That is anything with a space in the second column, or in the case of staged resolved merge conflicts, 'UU'.
   git_dirty_count=$(grep -v '^??' "$gs_porc_file" | grep -c -v '^\([^ ?] \|UU\)')
   if [[ "$git_dirty_count" > 0 ]]; then
-    git_dirty='*'
+    git_dirty_mark='*'
+    git_dirty="$git_dirty_mark" # TODO: remove, backward compatibility
   else
     git_dirty_count=''
   fi
-  # TODO: For consistency with ahead/behind variables, git_dirty could be renamed git_dirty_mark
-  #       and s/mark/marker/ why not?
 
   # Untracked/unknown files
   git_unknown_count=$(grep -c "^??" "$gs_porc_file")
@@ -177,7 +185,7 @@ find_git_ahead_behind() {
   git_behind_mark=''
   # How many of the commits on our local branch are rebased commits from the upstream branch?
   git_rebased_count=''
-  if [[ -z "$git_branch" ]]; then
+  if [[ -z "$git_branch" ]] || is_inside_git_dir ; then
     return
   fi
   local local_branch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null)
@@ -246,22 +254,28 @@ find_git_behind_main() {
 }
 
 find_git_stash_status() {
+  git_stash_count=''
   git_stash_mark=''
-  if [[ -z "$git_branch" ]]; then
+  if [[ -z "$git_branch" ]] || is_inside_git_dir ; then
     return
   fi
-  if echo "$PWD" | grep "/\.git\(/\|$\)" >/dev/null; then
-    return
-  fi
-  local stashed_commit=$(git stash list -n 1 | cut -d ':' -f 3 | cut -d ' ' -f 2)
-  local current_commit=$(git rev-parse --short HEAD 2> /dev/null)
-  local stashed_branch=$(git stash list -n 1 | cut -d ':' -f 2 | sed 's+.* ++')
-  #local stashed_branch=$(git stash list -n 1 | grep -o "^[^:]*: On [^:]*" | cut -d ' ' -f 3)
-  local current_branch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null)
-  # This sets the stash marker if either the current commit or the current branch name is mentioned in the top stack entry.
-  # CONSIDER: Alternatively we could have just grepped `git stash list` for either the commit_id or the branch_name.  This would also indicate older matching stashes.
-  if [[ "$stashed_commit" = "$current_commit" ]] || [[ -n "$current_branch" ]] && [[ "$stashed_branch" = "$current_branch" ]]; then
-    git_stash_mark='≡'
+  local stash=$(git stash list --format='%gs')
+  git_stash_count=$(echo -ne "$stash" | grep -c '^')
+  if [[ $git_stash_count -gt 0 ]]; then
+    local last_stash=$(echo -ne "$stash" | head -1)
+    local stashed_commit=$(echo -ne "$last_stash" | cut -d ':' -f 2 | cut -d ' ' -f 2)
+    local stashed_branch=$(echo -ne "$last_stash" | cut -d ':' -f 1 | sed 's+.* ++')
+    local current_commit=$(git rev-parse --short HEAD 2> /dev/null)
+    local current_branch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null)
+    # This sets different stash marker in case of
+	# either the current commit or the current branch name is mentioned in the top stack entry.
+    if [[ "$stashed_commit" = "$current_commit" ]] || [[ -n "$current_branch" ]] && [[ "$stashed_branch" = "$current_branch" ]]; then
+      git_stash_mark='≡'
+    else
+      git_stash_mark='≋'
+    fi
+  else
+    git_stash_count=''
   fi
 }
 
