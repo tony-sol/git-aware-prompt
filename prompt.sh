@@ -56,13 +56,13 @@ find_git_branch() {
       special_state=bisect
     fi
     if [[ -n "$special_state" ]]; then
-      git_branch=" {$branch\\$special_state}"
+      git_branch="{$branch\\$special_state}"
     elif [[ -n "$is_branch" && -n "$upstream" ]]; then
-      git_branch=" [$branch]"     # Branch has an upstream
+      git_branch="[$branch]"     # Branch has an upstream
     elif [[ -n "$is_branch" ]]; then
-      git_branch=" ($branch)"     # Branch has no upstream
+      git_branch="($branch)"     # Branch has no upstream
     else
-      git_branch=" <$branch>"     # Detached
+      git_branch="<$branch>"     # Detached
     fi
   else
     git_branch=""
@@ -131,7 +131,6 @@ find_git_dirty() {
 
   if [[ ! -f "$gs_done_file" ]]; then
     git_dirty_mark='#'
-    git_dirty="$git_dirty_mark" # TODO: remove, backward compatibility
     return
   fi
   'rm' -f "$gs_done_file"
@@ -151,7 +150,6 @@ find_git_dirty() {
   git_dirty_count=$(grep -v '^??' "$gs_porc_file" | grep -c -v '^\([^ ?] \|UU\)')
   if [[ "$git_dirty_count" > 0 ]]; then
     git_dirty_mark='*'
-    git_dirty="$git_dirty_mark" # TODO: remove, backward compatibility
   else
     git_dirty_count=''
   fi
