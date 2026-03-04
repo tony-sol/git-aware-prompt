@@ -2,10 +2,6 @@
 # - Number of conflicts
 # - Whether we are on a merge or a rebase?
 
-is_inside_git_dir() {
-  echo "$PWD" | grep "/\.git\(/\|$\)" >/dev/null
-}
-
 find_git_branch() {
   # Based on: http://stackoverflow.com/a/13003854/170413
   local branch
@@ -39,11 +35,7 @@ find_git_branch() {
       is_branch=true
       upstream=$(git rev-parse '@{upstream}' 2> /dev/null)
     fi
-    if is_inside_git_dir; then
-      git_dir="${PWD%\/\.git*}/.git"
-    else
-      git_dir="$(git rev-parse --show-toplevel)/.git"
-    fi
+    git_dir="$(realpath "$(git rev-parse --git-dir)")"
     if [[ -d "$git_dir/rebase-merge" ]] || [[ -d "$git_dir/rebase-apply" ]]; then
       special_state=rebase
     elif [[ -f "$git_dir/MERGE_HEAD" ]]; then
@@ -78,7 +70,7 @@ find_git_dirty() {
   git_unknown_count=''
 
   # Optimization.  Requires that find_git_branch always runs before find_git_dirty in PROMPT_COMMAND or zsh's precmd hook.
-  if [[ -z "$git_branch" ]] || is_inside_git_dir ; then
+  if [[ -z "$git_branch" ]] ; then
     return
   fi
 
@@ -217,9 +209,6 @@ find_git_ahead_behind() {
     fi
   fi
 
-  if [[ -z "$git_branch" ]] || is_inside_git_dir ; then
-    return
-  fi
   local local_branch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null)
   if [[ -n "$local_branch" ]] && [[ "$local_branch" != "HEAD" ]]; then
     local upstream_branch=$(git rev-parse --abbrev-ref "@{upstream}" 2> /dev/null)
@@ -284,7 +273,7 @@ find_git_ahead_behind() {
 find_git_stash_status() {
   git_stash_count=''
   git_stash_mark=''
-  if [[ -z "$git_branch" ]] || is_inside_git_dir ; then
+  if [[ -z "$git_branch" ]] || [[ $(git rev-parse --is-inside-work-tree 2> /dev/null) == false ]] ; then
     return
   fi
   local stash=$(git stash list --format='%gs')
